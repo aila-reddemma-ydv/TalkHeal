@@ -108,7 +108,13 @@ def handle_chat_input(model, system_prompt):
             try:
                 with st.spinner("TalkHeal is thinking..."):
                     memory = format_memory(active_convo["messages"])
-                    prompt = f"{system_prompt}\n\n{memory}\nUser: {user_input.strip()}\nBot:"
+                    mood = st.session_state.get("selected_mood", "😊 Happy")
+                    prompt = (
+                        f"{system_prompt}\n\n"
+                        f"The user is currently feeling: {mood}. Consider this mood while responding empathetically.\n\n"
+                        f"{memory}\nUser: {user_input.strip()}\nBot:"
+                    )
+
                     ai_response = get_ai_response(prompt, model)
 
                     active_convo["messages"].append({

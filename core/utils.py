@@ -18,8 +18,6 @@ def get_current_time():
 
     return now.strftime("%I:%M %p").lstrip("0")
 
-
-
 def create_new_conversation(initial_message=None):
     """
     Creates a new conversation in the session state.
@@ -32,14 +30,14 @@ def create_new_conversation(initial_message=None):
         "date": datetime.now().strftime("%B %d, %Y"),
         "messages": []
     }
-    
+
     if initial_message:
         new_convo["messages"].append({
-            "sender": "user", 
-            "message": initial_message, 
+            "sender": "user",
+            "message": initial_message,
             "time": get_current_time()
         })
-    
+
     st.session_state.conversations.insert(0, new_convo)
     st.session_state.active_conversation = 0
     return 0
@@ -53,7 +51,6 @@ def clean_ai_response(response_text):
     response_text = response_text.replace('&lt;', '<')
     response_text = response_text.replace('&gt;', '>')
     response_text = response_text.replace('&amp;', '&')
-    
     return response_text
 
 def get_ai_response(user_message, model):
@@ -69,30 +66,28 @@ def get_ai_response(user_message, model):
     5. Ask follow-up questions to better understand the user's situation
     6. Provide coping strategies and resources when appropriate
     7. Not assume that the user is always in overwhelming states. Sometimes he/she might also be in joyful or curious moods and ask questions not related to mental health
-    
+
     IMPORTANT: Respond with PLAIN TEXT ONLY. Do not include any HTML tags, markdown formatting, or special characters. Just provide a natural, conversational response.
-    
+
     User message: {user_message}
-    
+
     Respond in a caring, supportive manner (keep response under 150 words):
     """
     
     try:
         response = model.generate_content(mental_health_prompt)
-        # Clean the response to remove any HTML or unwanted formatting
         cleaned_response = clean_ai_response(response.text)
         return cleaned_response
     except Exception as e:
         return "I'm here to listen and support you. Sometimes I have trouble connecting, but I want you to know that your feelings are valid and you're not alone. Would you like to share more about what you're experiencing?"
 
-#Implementing IP Based Isolation
+# IP Isolation
 def get_user_ip():
     try:
         return requests.get("https://api.ipify.org").text
     except:
         return "unknown_ip"
 
-#Saving and loading to/from JSON File
 def get_memory_file():
     ip = get_user_ip()
     os.makedirs("data", exist_ok=True)
@@ -109,3 +104,18 @@ def load_conversations():
         return []
     with open(memory_file, 'r', encoding="utf-8") as f:
         return json.load(f)
+
+# ✅ MISSING FUNCTION: Mood Tip Generator
+def get_mood_tip(mood):
+    """
+    Returns a tip or message based on the selected mood.
+    """
+    tips = {
+        "Very Low": "It's okay to feel low sometimes. Consider talking to a friend or therapist.",
+        "Low": "Take a short walk, breathe deeply, and treat yourself with kindness.",
+        "Okay": "You're doing okay. Reflect on something you're grateful for today.",
+        "Good": "That's great! Maybe help someone else feel good too.",
+        "Great": "Awesome! Keep that positive energy going and spread it around."
+    }
+    return tips.get(mood, "Remember to take care of yourself.")
+

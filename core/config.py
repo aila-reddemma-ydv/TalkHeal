@@ -13,17 +13,7 @@ PAGE_CONFIG = {
     "menu_items": None
 }
 
-st.set_page_config(**PAGE_CONFIG)
-
-# ---------- Custom Dropdown Style ----------
-st.markdown("""
-    <style>
-        div[data-baseweb="select"] {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# ⚠️ DO NOT CALL st.set_page_config HERE — it's already set in talkheal.py
 
 # ---------- Tone Options ----------
 TONE_OPTIONS = {
@@ -34,22 +24,17 @@ TONE_OPTIONS = {
     "Mindfulness Guide": "You are a mindfulness guide — calm, slow, and grounding — focused on breathing, presence, and awareness."
 }
 
-# ---------- Sidebar Tone Selector ----------
-with st.sidebar:
-    st.header("🧠 Choose Your AI Tone")
-    default_tone = list(TONE_OPTIONS.keys())[0]
-    selected_tone = st.selectbox(
-        "Select a personality tone:",
-        options=list(TONE_OPTIONS.keys()),
-        index=0,
-        key="tone_selector"
-    )
-    st.session_state["selected_tone"] = selected_tone or default_tone
+# ---------- Emoji-Based Mood Options ----------
+MOOD_OPTIONS = {
+    "😊": "Happy",
+    "😢": "Sad",
+    "😡": "Angry",
+    "😰": "Anxious",
+    "😌": "Relaxed",
+    "😔": "Lonely"
+}
 
-# ---------- Display Current Tone in Chat Section ----------
-st.subheader(f"🗣️ Current Chatbot Tone: **{st.session_state['selected_tone']}**")
-
-# ---------- Gemini Configuration ----------
+# ---------- Gemini API Configuration ----------
 def configure_gemini():
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
@@ -63,30 +48,28 @@ def configure_gemini():
         st.error(f"❌ Failed to configure Gemini API: {e}")
     return None
 
-# ---------- Get System Prompt ----------
-def get_tone_system_prompt():
+# ---------- Get Tone Prompt ----------
+def get_tone_prompt():
     tone = st.session_state.get("selected_tone", "Compassionate Listener")
     return TONE_OPTIONS.get(tone, TONE_OPTIONS["Compassionate Listener"])
 
-# ---------- Generate AI Response ----------
-def generate_response(user_input, model):
-    system_prompt = get_tone_system_prompt()
-    try:
-        response = model.generate_content([
-            {"role": "system", "parts": [system_prompt]},
-            {"role": "user", "parts": [user_input]}
-        ])
-        return response.text
-    except Exception as e:
-        st.error(f"❌ Failed to generate response: {e}")
-        return None
+# ---------- Get Mood Label ----------
+def get_selected_mood():
+    emoji = st.session_state.get("selected_mood", "😊")
+    return MOOD_OPTIONS.get(emoji, "Happy")  # default fallback
+# ---------- Conversation State Utility ----------
+def create_new_conversation():
+    from datetime import datetime
 
-# ---------- MAIN CHAT INTERFACE ----------
-model = configure_gemini()
+    new_convo = {
+        "title": "New Chat",
+        "messages": [],
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
 
-if model:
-    user_input = st.text_input("💬 You:", placeholder="Share what's on your mind...")
-    if user_input:
-        response = generate_response(user_input, model)
-        if response:
-            st.markdown(f"**🤖 TalkHeal:** {response}")
+    if "conversations" not in st.session_state:
+        st.session_state.conversations = []
+
+    st.session_state.conversations.insert(0, new_convo)
+    st.session_state.active_conversation = 0
+
