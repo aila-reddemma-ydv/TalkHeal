@@ -6,6 +6,8 @@ import google.generativeai as genai
 from core.config import PAGE_CONFIG
 st.set_page_config(**PAGE_CONFIG)
 
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+
 # --- 2. CONTINUED IMPORTS ---
 from core.utils import save_conversations, load_conversations, get_current_time, create_new_conversation
 from core.config import configure_gemini, get_tone_prompt, get_selected_mood
