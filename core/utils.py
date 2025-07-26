@@ -81,7 +81,35 @@ def get_ai_response(user_message, model):
     except Exception as e:
         return "I'm here to listen and support you. Sometimes I have trouble connecting, but I want you to know that your feelings are valid and you're not alone. Would you like to share more about what you're experiencing?"
 
-# IP Isolation
+# Implementing IP Based Isolation
+def cached_user_ip():
+    # Check if IP is already cached in session state
+    if hasattr(st.session_state, 'cached_ip') and hasattr(st.session_state, 'ip_cache_time'):
+        # Check if cache is still valid (cache for 1 hour)
+        cache_age = datetime.now() - st.session_state.ip_cache_time
+        if cache_age < timedelta(hours=1):
+            return st.session_state.cached_ip
+    
+    # Cache is missing or expired, fetch new IP
+    try:
+        response = requests.get("https://api.ipify.org", timeout=5)
+        ip = response.text.strip()
+        # Cache the IP and timestamp
+        st.session_state.cached_ip = ip
+        st.session_state.ip_cache_time = datetime.now()
+        
+        return ip
+    except (requests.RequestException, requests.Timeout, Exception):
+        # Fallback: use session ID or generate a unique identifier
+        fallback_id = f"session_{hash(str(st.session_state)) % 100000}"
+        
+        # Cache the fallback ID so we use the same one consistently
+        if not hasattr(st.session_state, 'cached_ip'):
+            st.session_state.cached_ip = fallback_id
+            st.session_state.ip_cache_time = datetime.now()
+        
+        return st.session_state.cached_ip
+
 def get_user_ip():
     try:
         return requests.get("https://api.ipify.org").text
@@ -89,7 +117,7 @@ def get_user_ip():
         return "unknown_ip"
 
 def get_memory_file():
-    ip = get_user_ip()
+    ip = cached_user_ip()
     os.makedirs("data", exist_ok=True)
     return f"data/conversations_{ip}.json"
 
@@ -105,7 +133,7 @@ def load_conversations():
     with open(memory_file, 'r', encoding="utf-8") as f:
         return json.load(f)
 
-# ✅ MISSING FUNCTION: Mood Tip Generator
+# Mood Tip Generator
 def get_mood_tip(mood):
     """
     Returns a tip or message based on the selected mood.
@@ -118,4 +146,3 @@ def get_mood_tip(mood):
         "Great": "Awesome! Keep that positive energy going and spread it around."
     }
     return tips.get(mood, "Remember to take care of yourself.")
-
