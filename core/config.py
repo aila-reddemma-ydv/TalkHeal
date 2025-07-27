@@ -53,10 +53,16 @@ def get_tone_prompt():
     tone = st.session_state.get("selected_tone", "Compassionate Listener")
     return TONE_OPTIONS.get(tone, TONE_OPTIONS["Compassionate Listener"])
 
-# ---------- Get Mood Label ----------
+# ---------- Get Mood Label (for emoji picker) ----------
 def get_selected_mood():
     emoji = st.session_state.get("selected_mood", "😊")
     return MOOD_OPTIONS.get(emoji, "Happy")  # default fallback
+
+# ---------- Get Mood Prompt (for emoji-based OR radio mood selector) ----------
+def get_mood_context():
+    mood = st.session_state.get("current_mood_val") or get_selected_mood()
+    return f"The user is currently feeling '{mood}'. Please respond empathetically and supportively based on their emotional state."
+
 # ---------- Conversation State Utility ----------
 def create_new_conversation():
     from datetime import datetime
@@ -72,4 +78,10 @@ def create_new_conversation():
 
     st.session_state.conversations.insert(0, new_convo)
     st.session_state.active_conversation = 0
+# ---------- Required Constants for Imports ----------
+MODEL = "models/gemini-1.5-flash"  # or use gemini-2.0 if preferred
+SYSTEM_PROMPT = """
+You are TalkHeal, a compassionate and supportive AI assistant focused on mental well-being.
+Always reply empathetically, provide helpful suggestions, and foster a safe space for open communication.
+"""
 

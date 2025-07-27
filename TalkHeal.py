@@ -1,60 +1,62 @@
 # --- 0. IMPORTS ---
+import uuid  # standard library import
 import streamlit as st
-import google.generativeai as genai
 
-# --- 1. FIRST COMMAND: PAGE CONFIG ---
+# --- 1. PAGE CONFIG FIRST ---
 from core.config import PAGE_CONFIG
-st.set_page_config(**PAGE_CONFIG)
-
-GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-
-# --- 2. CONTINUED IMPORTS ---
-from core.utils import save_conversations, load_conversations, get_current_time, create_new_conversation
-from core.config import configure_gemini, get_tone_prompt, get_selected_mood
+st.set_page_config(**PAGE_CONFIG) 
 from css.styles import apply_custom_css
+
+from core.config import configure_gemini, get_tone_prompt, get_selected_mood
+from core.utils import save_conversations, load_conversations, get_current_time, create_new_conversation
+
 from components.header import render_header
 from components.sidebar import render_sidebar
 from components.chat_interface import render_chat_interface, handle_chat_input
 from components.emergency_page import render_emergency_page
 
-# --- 3. SESSION STATE INITIALIZATION ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "conversations" not in st.session_state:
-    st.session_state.conversations = load_conversations()
-if "active_conversation" not in st.session_state:
-    st.session_state.active_conversation = -1
-if "show_emergency_page" not in st.session_state:
-    st.session_state.show_emergency_page = False
-if "sidebar_state" not in st.session_state:
-    st.session_state.sidebar_state = "expanded"
-if "mental_disorders" not in st.session_state:
-    st.session_state.mental_disorders = [
+# --- 1. PAGE CONFIG & CSS ---
+apply_custom_css()
+
+# --- 2. SESSION STATE INITIALIZATION ---
+default_values = {
+    "conversations": [],
+    "active_conversation": -1,
+    "send_chat_message": False,
+    "pre_filled_chat_input": "",
+    "selected_mood_context": "",
+    "current_mood_val": "",
+    "chat_history": [],
+    "show_emergency_page": False,
+    "sidebar_state": "expanded",
+    "mental_disorders": [
         "Depression & Mood Disorders", "Anxiety & Panic Disorders", "Bipolar Disorder",
         "PTSD & Trauma", "OCD & Related Disorders", "Eating Disorders",
         "Substance Use Disorders", "ADHD & Neurodevelopmental", "Personality Disorders",
         "Sleep Disorders"
-    ]
-if "selected_tone" not in st.session_state:
-    st.session_state.selected_tone = "Compassionate Listener"
-if "selected_mood" not in st.session_state:
-    st.session_state.selected_mood = "🙂"  # Default emoji mood
+    ],
+    "selected_tone": "Compassionate Listener",
+    "selected_mood": "🙂"
+}
 
-# --- 4. STYLES & GEMINI SETUP ---
-apply_custom_css()
+for key, val in default_values.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
+
+# --- 3. GEMINI MODEL SETUP ---
 model = configure_gemini()
 
-# --- 5. SIDEBAR ---
+# --- 4. SIDEBAR ---
 render_sidebar()
 
-# --- 6. MAIN PAGE ROUTING LOGIC ---
+# --- 5. MAIN LOGIC CONTAINER ---
 main_area = st.container()
 
-# Load conversations or start a new one
+# --- 6. Load or Start Conversation ---
 if not st.session_state.conversations:
-    saved_convos = load_conversations()
-    if saved_convos:
-        st.session_state.conversations = saved_convos
+    saved = load_conversations()
+    if saved:
+        st.session_state.conversations = saved
         if st.session_state.active_conversation == -1:
             st.session_state.active_conversation = 0
     else:
@@ -62,17 +64,16 @@ if not st.session_state.conversations:
         st.session_state.active_conversation = 0
     st.rerun()
 
-# --- 7. MAIN VIEW DISPLAY ---
-if st.session_state.get("show_emergency_page"):
-    with main_area:
+# --- 7. ROUTING ---
+with main_area:
+    if st.session_state.get("show_emergency_page"):
         render_emergency_page()
-else:
-    with main_area:
+    else:
         render_header()
         st.subheader(f"🗣️ Current Chatbot Tone: **{st.session_state['selected_tone']}**")
         st.markdown(f"**🧠 Mood Selected:** {get_selected_mood()}")
         render_chat_interface()
-        handle_chat_input(model, system_prompt=get_tone_prompt())
+        handle_chat_input(model=model, system_prompt=get_tone_prompt())
 
 # --- 8. AUTO SCROLL SCRIPT ---
 st.markdown("""

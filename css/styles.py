@@ -6,7 +6,25 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
+
 def apply_custom_css():
+    st.markdown(
+        """
+        <style>
+        textarea {
+            color: black !important;
+            background-color: white !important;
+        }
+
+        .stTextArea textarea {
+            color: black !important;
+            background-color: white !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     from core.theme import get_current_theme
     theme_config = get_current_theme()
     theme_overrides = {
