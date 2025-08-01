@@ -1,3 +1,6 @@
+from css.styles import apply_custom_css
+apply_custom_css()
+
 import streamlit as st
 import webbrowser
 from datetime import datetime
@@ -73,16 +76,18 @@ mental_health_resources_full = {
     }
 }
 
-
 import streamlit as st
 from core.utils import save_conversations
 from core.config import create_new_conversation
+import uuid  # Add this at the top of the file if not already imported
 
 def render_sidebar():
     """Renders the left and right sidebars."""
 
     with st.sidebar:
         st.markdown("### 💬 Conversations")
+
+        # Initialize session state
         if "show_quick_start_prompts" not in st.session_state:
             st.session_state.show_quick_start_prompts = False
         if "pre_filled_chat_input" not in st.session_state:
@@ -90,10 +95,19 @@ def render_sidebar():
         if "send_chat_message" not in st.session_state:
             st.session_state.send_chat_message = False
 
-        if st.button("➕ New Chat", key="new_chat", use_container_width=True, type="primary"):
+        # ✅ Fixed unique key — use a constant key only once
+                # ✅ Unique key fix using session_state
+
+# Inside render_sidebar()
+        unique_chat_key = f"sidebar_new_chat_button_{uuid.uuid4()}"
+
+        if st.button("➕ New Chat", key=unique_chat_key, use_container_width=True, type="primary"):
             create_new_conversation()
             st.session_state.show_quick_start_prompts = True
             st.rerun()
+
+
+
 
         if st.session_state.show_quick_start_prompts:
             st.markdown("---")
@@ -164,12 +178,12 @@ def render_sidebar():
             st.markdown("**How are you feeling today?**")
 
             mood_options_map = {
-                "😔 Very Low": "very_low",
-                "😐 Low": "low",
-                "😊 Okay": "okay",
-                "😄 Good": "good",
-                "🌟 Great": "great"
-            }
+                    "😔 Very Low": "very_low",
+                    "😐 Low": "low",
+                    "😊 Okay": "okay",
+                    "😄 Good": "good",
+                    "🌟 Great": "great"
+                }
             mood_labels = list(mood_options_map.keys())
 
             selected_mood_label = st.radio(
@@ -181,9 +195,11 @@ def render_sidebar():
                 label_visibility="collapsed"
             )
 
+            # Get mood key from label and save in session
             current_mood_val = mood_options_map[selected_mood_label]
             st.session_state["current_mood_val"] = current_mood_val
 
+            # Prompt based on mood
             journal_prompts = {
                 "very_low": "What's weighing on your mind today?",
                 "low": "What are your thoughts right now?",
@@ -195,35 +211,32 @@ def render_sidebar():
             st.markdown(f"**📝 {journal_prompts[current_mood_val]}**")
             journal_input = st.text_area("Your thoughts:", key="mood_journal_area", height=100)
 
-            # Initialize states
-            if "mood_journal_entry" not in st.session_state:
-                st.session_state.mood_journal_entry = ""
-            if "mood_tip_display" not in st.session_state:
-                st.session_state.mood_tip_display = ""
-            if "mood_entry_status" not in st.session_state:
-                st.session_state.mood_entry_status = ""
-
+            # Tips based on mood (using mood *value*, not label)
+            # Mood-based tips dictionary
             tips_for_mood = {
                 "very_low": "Remember, it's okay not to be okay. Consider connecting with a professional.",
                 "low": "Even small steps help. Try a brief mindful moment or gentle activity.",
                 "okay": "Keep nurturing your well-being. What's one thing you can do to maintain this?",
                 "good": "That's wonderful! Savor this feeling and perhaps share your positivity.",
                 "great": "Fantastic! How can you carry this energy forward into your day?"
-            }.get(current_mood_val, "A general tip for your mood.")
+            }
 
-            st.markdown("")
+            # Get the tip for the selected mood
+            tip = tips_for_mood.get(current_mood_val, "A general tip for your mood.")
+
+            # Two buttons: Get Tip & Save Entry and Ask TalkHeal
             col1, col2 = st.columns(2)
 
             with col1:
                 if st.button("Get Tip & Save Entry", key="save_mood_entry", use_container_width=True):
-                    st.session_state.mood_tip_display = tips_for_mood
+                    st.session_state.mood_tip_display = tip  # ✅ show only selected mood tip
                     st.session_state.mood_entry_status = f"Your mood entry for '{selected_mood_label}' has been noted."
-                    st.session_state.mood_journal_entry = ""
+                    st.session_state.mood_journal_entry = journal_input  # ✅ store the journal input
 
             with col2:
                 if st.button("Ask TalkHeal", key="ask_peace_pulse_from_mood", use_container_width=True):
-                    if st.session_state.mood_journal_area.strip():
-                        st.session_state.pre_filled_chat_input = st.session_state.mood_journal_area
+                    if journal_input.strip():
+                        st.session_state.pre_filled_chat_input = journal_input
                         st.session_state.send_chat_message = True
                         st.session_state.mood_journal_entry = ""
                         st.session_state.mood_tip_display = ""
@@ -232,11 +245,11 @@ def render_sidebar():
                     else:
                         st.warning("Please enter your thoughts before asking TalkHeal.")
 
-            if st.session_state.mood_tip_display:
+            if st.session_state.get("mood_tip_display"):
                 st.success(st.session_state.mood_tip_display)
                 st.session_state.mood_tip_display = ""
 
-            if st.session_state.mood_entry_status:
+            if st.session_state.get("mood_entry_status"):
                 st.info(st.session_state.mood_entry_status)
                 st.session_state.mood_entry_status = ""
 
