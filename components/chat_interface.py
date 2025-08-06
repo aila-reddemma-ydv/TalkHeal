@@ -1,7 +1,39 @@
 import streamlit as st
-from core.utils import save_conversations, get_current_time
-from core.gemini import get_ai_response
+import streamlit as st
+import streamlit.components.v1 as components
+from datetime import datetime
+from core.utils import get_current_time, get_ai_response, save_conversations
 
+# --- Inject JS to get user's local time zone ---
+def set_user_time_in_session():
+    if "user_time_offset" not in st.session_state:
+        components.html("""
+            <script>
+            const offset = new Date().getTimezoneOffset(); 
+            const time = new Date().toLocaleString();      
+            const data = {offset: offset, time: time};
+            window.parent.postMessage({type: 'USER_TIME', data: data}, '*');
+            </script>
+        """, height=0)
+
+        st.markdown("""
+        <script>
+        window.addEventListener("message", (event) => {
+            if (event.data.type === "USER_TIME") {
+                const payload = JSON.stringify(event.data.data);
+                fetch("/", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: payload
+                }).then(() => location.reload());
+            }
+        });
+        </script>
+        """, unsafe_allow_html=True)
+
+set_user_time_in_session()
+
+# --- Render chat messages ---
 def render_chat_interface():
     st.markdown("### 🗨️ TalkHeal Conversation")
 
@@ -11,6 +43,15 @@ def render_chat_interface():
         return
 
     conversation = st.session_state.conversations[active_index]
+
+    if not conversation["messages"]:
+        st.markdown(f"""
+        <div class="welcome-message">
+            <strong>Hello! I'm TalkHeal, your mental health companion 🤗</strong><br>
+            How are you feeling today? You can write below or start a new topic.
+            <div class="message-time">{get_current_time()}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     for msg in conversation["messages"]:
         sender = msg["sender"]
@@ -23,7 +64,6 @@ def render_chat_interface():
         else:
             with st.chat_message("assistant", avatar="💬"):
                 st.markdown(f"{message}\n\n<sub>{time}</sub>", unsafe_allow_html=True)
-
 
 def handle_chat_input(model, system_prompt):
     pre_filled = st.session_state.get("pre_filled_chat_input", "")
@@ -93,11 +133,25 @@ def handle_chat_input(model, system_prompt):
                         "time": get_current_time()
                     })
 
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+            except ValueError as e:
+                st.error("I'm having trouble understanding your message. Could you please rephrase it?")
                 active_convo["messages"].append({
                     "sender": "bot",
-                    "message": "I’m having trouble responding right now. Please try again in a moment.",
+                    "message": "I'm having trouble understanding your message. Could you please rephrase it?",
+                    "time": get_current_time()
+                })
+            except requests.RequestException as e:
+                st.error("Network connection issue. Please check your internet connection.")
+                active_convo["messages"].append({
+                    "sender": "bot",
+                    "message": "I'm having trouble connecting to my services. Please check your internet connection and try again.",
+                    "time": get_current_time()
+                })
+            except Exception as e:
+                st.error(f"An unexpected error occurred. Please try again.")
+                active_convo["messages"].append({
+                    "sender": "bot",
+                    "message": "I'm having trouble responding right now. Please try again in a moment.",
                     "time": get_current_time()
                 })
 

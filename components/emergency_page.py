@@ -2,6 +2,8 @@ import streamlit as st
 from geopy.geocoders import Nominatim
 import urllib.parse
 from .sidebar import GLOBAL_RESOURCES
+import geopy.exc
+import requests
 
 
 def render_emergency_page():
@@ -41,8 +43,20 @@ def render_emergency_page():
                         st.error(
                             f"Could not find a location for '{location_query}'. Please try again.")
                         st.session_state.pop('location_info', None)
+                except geopy.exc.GeocoderTimedOut:
+                    st.error("Location search timed out. Please try again with a more specific location.")
+                    st.session_state.pop('location_info', None)
+                except geopy.exc.GeocoderUnavailable:
+                    st.error("Location service is currently unavailable. Please try again later.")
+                    st.session_state.pop('location_info', None)
+                except geopy.exc.GeocoderQuotaExceeded:
+                    st.error("Location service quota exceeded. Please try again later.")
+                    st.session_state.pop('location_info', None)
+                except requests.RequestException as e:
+                    st.error("Network error while searching for location. Please check your internet connection.")
+                    st.session_state.pop('location_info', None)
                 except Exception as e:
-                    st.error(f"An error occurred during search: {e}")
+                    st.error(f"An unexpected error occurred during search. Please try again.")
                     st.session_state.pop('location_info', None)
         else:
             st.warning("Please enter a location to search.")

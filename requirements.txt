@@ -4,3 +4,9 @@ google-generativeai
 geopy
 requests
 Pillow
+plotly
+pandas
+streamlit-lottie
+bcrypt
+streamlit_js_eval
+pygame

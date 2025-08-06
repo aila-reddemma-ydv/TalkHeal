@@ -81,21 +81,8 @@ def apply_custom_css():
             --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }}
 
-        /* Streamlit header and toolbar fixes */
         .stApp > header {{
             background-color: transparent !important;
-        }}
-        
-        div[data-testid="stToolbar"] {{
-            visibility: hidden;
-        }}
-        
-        .stDeployButton {{
-            visibility: hidden;
-        }}
-        
-        footer {{
-            visibility: hidden;
         }}
         
         /* Main app background and styling */
@@ -516,7 +503,7 @@ def apply_custom_css():
         .stTextInput > div > div > input,
         .stTextArea > div > div > textarea {{
             background: var(--glass-effect) !important;
-            background-color: #FFFFD0 !important;
+            background-color: #FFDDEE !important;
             border: 2px solid var(--border) !important;
             border-radius: var(--radius) !important;
             font-size: 1em !important;

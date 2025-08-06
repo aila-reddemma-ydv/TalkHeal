@@ -3,7 +3,10 @@ import webbrowser
 from datetime import datetime
 from core.utils import create_new_conversation, get_current_time
 from core.theme import get_current_theme, toggle_theme, set_palette, PALETTES
-#from core.resource import GLOBAL_RESOURCES, mental_health_resources_full
+from components.mood_dashboard import render_mood_dashboard_button, MoodTracker
+from components.profile import initialize_profile_state, render_profile_section
+from streamlit_js_eval import streamlit_js_eval
+import requests
 
 
 # --- Structured Emergency Resources ---
@@ -19,6 +22,69 @@ GLOBAL_RESOURCES = [
     {"name": "Child Helpline International", "desc": "A global network of child helplines for young people in need of help.",
      "url": "https://www.childhelplineinternational.org/"}
 ]
+
+
+def get_country_from_coords(lat, lon):
+    try:
+        url = f"https://geocode.maps.co/reverse?lat={lat}&lon={lon}"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("address", {}).get("country_code", "").upper()
+    except:
+        pass
+    return None
+
+def get_user_country():
+    # 1. Try to get user's actual browser location (via JS)
+    coords = streamlit_js_eval(
+        js_expressions="""
+            new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    }),
+                    error => resolve(null)
+                );
+            });
+        """,
+        key="get_coords"
+    )
+
+    if coords and "latitude" in coords and "longitude" in coords:
+        country = get_country_from_coords(coords["latitude"], coords["longitude"])
+        if country:
+            return country
+
+    # 2. Fallback to IP-based location using ipapi.co (no key required)
+    try:
+        resp = requests.get("https://ipapi.co/json/", timeout=3)
+        if resp.status_code == 200:
+            return resp.json().get("country_code", "").upper()
+    except:
+        pass
+
+    return None  # final fallback if everything fails
+
+country_helplines = {
+    "US": [
+        "National Suicide Prevention Lifeline: 988",
+        "Crisis Text Line: Text HOME to 741741",
+        "SAMHSA National Helpline: 1-800-662-4357"
+    ],
+    "IN": [
+        "AASRA: 9152987821",
+        "Sneha Foundation: 044-24640050"
+    ],
+    "GB": [
+        "Samaritans: 116 123"
+    ],
+    "AU": [
+        "Lifeline: 13 11 14"
+    ]
+}
+IASP_LINK = "https://findahelpline.com/"
 
 mental_health_resources_full = {
     "Depression & Mood Disorders": {
@@ -80,9 +146,17 @@ from core.config import create_new_conversation
 
 def render_sidebar():
     """Renders the left and right sidebars."""
-
+    
     with st.sidebar:
+        render_profile_section()
+
+        st.markdown("### 📂 Explore")
+        st.page_link("pages/Journaling.py", label="📝 Journaling", use_container_width=True)
+        st.page_link("pages/Yoga.py", label="🧘 Yoga", use_container_width=True)
+        st.markdown("---")
+
         st.markdown("### 💬 Conversations")
+
         if "show_quick_start_prompts" not in st.session_state:
             st.session_state.show_quick_start_prompts = False
         if "pre_filled_chat_input" not in st.session_state:
@@ -115,6 +189,7 @@ def render_sidebar():
 
             st.markdown("---")
 
+
         if st.session_state.conversations:
             if "delete_candidate" not in st.session_state:
                 for i, convo in enumerate(st.session_state.conversations):
@@ -132,9 +207,19 @@ def render_sidebar():
                             st.session_state.active_conversation = i
                             st.rerun()
                     with col2:
-                        if st.button("🗑️", key=f"delete_{i}", type="primary"):
-                            st.session_state.delete_candidate = i
-                            st.rerun()
+                        if convo["messages"]:
+                            if st.button("🗑️", key=f"delete_{i}", type="primary", use_container_width=True):
+                                st.session_state.delete_candidate = i
+                                st.rerun()
+                        else:
+                                st.button(
+                                "🗑️",
+                                key=f"delete_{i}",
+                                type="primary",
+                                use_container_width=True,
+                                disabled=not convo["messages"]  # Disable if it's a new/empty conversation
+                            )
+
 
             else:
                 st.warning("⚠️ Are you sure you want to delete this conversation?")
@@ -158,9 +243,17 @@ def render_sidebar():
         if st.button("🚨 Emergency Help", use_container_width=True, type="secondary"):
             st.session_state.show_emergency_page = True
             st.rerun()
+# --- FOCUS SESSION BUTTON ---
+if st.button("🧘 Focus Session", use_container_width=True, type="secondary", key="focus_session_button"):
+    st.session_state.show_focus_session = True
+    st.rerun()
 
-        # --- Mood Tracker ---
-        with st.expander("🧠 Mental Health Check", expanded=True):
+# --- MOOD DASHBOARD BUTTON ---
+render_mood_dashboard_button()
+
+# --- Mood Tracker ---
+with st.expander("🧠 Mental Health Check", expanded=True):
+
             st.markdown("**How are you feeling today?**")
 
             mood_options_map = {
@@ -219,12 +312,72 @@ def render_sidebar():
                     st.session_state.mood_tip_display = tips_for_mood
                     st.session_state.mood_entry_status = f"Your mood entry for '{selected_mood_label}' has been noted."
                     st.session_state.mood_journal_entry = ""
+# Context reason dropdown
+st.markdown("**Why are you feeling this way?**")
+context_reasons = ["No specific reason", "Work", "Family", "Health", "Relationships", "Financial", "Social", "Personal goals", "Weather", "Other"]
+selected_reason = st.selectbox(
+    "Select a reason (optional):",
+    options=context_reasons,
+    key="mood_context_reason",
+    label_visibility="collapsed"
+)
 
-            with col2:
-                if st.button("Ask TalkHeal", key="ask_peace_pulse_from_mood", use_container_width=True):
-                    if st.session_state.mood_journal_area.strip():
-                        st.session_state.pre_filled_chat_input = st.session_state.mood_journal_area
-                        st.session_state.send_chat_message = True
+# Activity checkboxes
+st.markdown("**What did you do today?** (optional)")
+activities = []
+col1, col2 = st.columns(2)
+with col1:
+    if st.checkbox("✅ Exercise", key="activity_exercise"):
+        activities.append("Exercise")
+    if st.checkbox("✅ Socialized", key="activity_socialized"):
+        activities.append("Socialized")
+with col2:
+    if st.checkbox("✅ Ate healthy", key="activity_healthy_eating"):
+        activities.append("Ate healthy")
+    if st.checkbox("✅ Slept well", key="activity_slept_well"):
+        activities.append("Slept well")
+
+tips_for_mood = {
+    "very_low": "Remember, it's okay not to be okay. Consider connecting with a professional.",
+    "low": "Even small steps help. Try a brief mindful moment or gentle activity.",
+    "okay": "Keep nurturing your well-being. What's one thing you can do to maintain this?",
+    "good": "That's wonderful! Savor this feeling and perhaps share your positivity.",
+    "great": "Fantastic! How can you carry this energy forward into your day?"
+}.get(st.session_state.current_mood_val, "A general tip for your mood.")
+
+st.markdown("")
+col_tip_save, col_ask_TalkHeal = st.columns(2)
+
+with col_tip_save:
+    if st.button("Get Tip & Save Entry", key="save_mood_entry", use_container_width=True):
+        # Save to mood dashboard
+        if "mood_tracker" not in st.session_state:
+            st.session_state.mood_tracker = MoodTracker()
+        
+        mood_level = st.session_state.current_mood_val
+        notes = st.session_state.get("mood_journal_area", "")
+        context_reason = st.session_state.get("mood_context_reason", "No specific reason")
+        activities = []
+        if st.session_state.get("activity_exercise", False):
+            activities.append("Exercise")
+        if st.session_state.get("activity_socialized", False):
+            activities.append("Socialized")
+        if st.session_state.get("activity_healthy_eating", False):
+            activities.append("Ate healthy")
+        if st.session_state.get("activity_slept_well", False):
+            activities.append("Slept well")
+        
+        st.session_state.mood_tracker.add_mood_entry(mood_level, notes, context_reason, activities)
+        
+        st.session_state.mood_tip_display = tips_for_mood
+        st.session_state.mood_entry_status = f"Your mood entry for '{selected_mood_label}' has been saved to your dashboard!"
+
+with col_ask_TalkHeal:
+    if st.button("Ask TalkHeal", key="ask_peace_pulse_from_mood", use_container_width=True):
+        if st.session_state.mood_journal_area.strip():
+            st.session_state.pre_filled_chat_input = st.session_state.mood_journal_area
+            st.session_state.send_chat_message = True
+
                         st.session_state.mood_journal_entry = ""
                         st.session_state.mood_tip_display = ""
                         st.session_state.mood_entry_status = ""
@@ -287,6 +440,21 @@ def render_sidebar():
             for resource in GLOBAL_RESOURCES:
                 st.markdown(
                     f"**{resource['name']}**: {resource['desc']} [Visit Website]({resource['url']})")
+            
+            # Provide localized helplines based on user's country
+            user_country = get_user_country()
+            country_label = user_country if user_country else "your country"
+            st.markdown("### 🚨 Emergency Help")
+            if user_country and user_country in country_helplines:
+                st.markdown(f"**Helplines for {country_label}:**")
+                for line in country_helplines[user_country]:
+                    st.markdown(f"• {line}")
+            else:
+                st.markdown(
+                    f"Couldn't detect a local helpline for {country_label}. [Find help worldwide via IASP]({IASP_LINK})"
+                )
+
+            st.markdown("---")
 
         # Theme toggle in sidebar
         with st.expander("🎨 Theme Settings"):

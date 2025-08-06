@@ -1,0 +1,91 @@
+{
+  "Anxious": {
+    "sanskrit_name": "Viparita Karani",
+    "english_name": "Legs-Up-the-Wall Pose",
+    "benefit": "Relieves anxiety and calms the nervous system.",
+    "steps": [
+      "Lie on your back and extend your legs up against a wall.",
+      "Keep your arms relaxed at your sides.",
+      "Breathe deeply and relax for 5-15 minutes."
+    ]
+  },
+  "Sad": {
+    "sanskrit_name": "Balasana",
+    "english_name": "Child's Pose",
+    "benefit": "Soothes sadness and encourages inner reflection.",
+    "steps": [
+      "Kneel down and sit back on your heels.",
+      "Bend forward and stretch your arms in front of you.",
+      "Rest your forehead on the mat and take deep breaths."
+    ]
+  },
+  "Stressed": {
+    "sanskrit_name": "Bhramari Pranayama",
+    "english_name": "Bee Breath",
+    "benefit": "Reduces stress and relaxes the mind through calming vibrations.",
+    "steps": [
+      "Sit comfortably with your spine straight.",
+      "Close your eyes and take a deep breath in.",
+      "Exhale slowly while making a humming sound like a bee.",
+      "Repeat this for 5-10 rounds."
+    ]
+  },
+  "Motivated": {
+    "sanskrit_name": "Surya Namaskar",
+    "english_name": "Sun Salutation",
+    "benefit": "Boosts energy, motivation, and positivity through a full-body flow.",
+    "steps": [
+      "Stand tall in Mountain Pose with hands in prayer.",
+      "Inhale, raise your arms overhead and arch back slightly.",
+      "Exhale, fold forward and place your hands on the ground.",
+      "Inhale, lift your head and chest halfway up.",
+      "Exhale, step back into a plank and lower to the floor.",
+      "Inhale into Cobra pose.",
+      "Exhale into Downward Dog and hold.",
+      "Inhale, step forward, and repeat the flow for 3-5 rounds."
+    ]
+  },
+  "Tired": {
+    "sanskrit_name": "Savasana",
+    "english_name": "Corpse Pose",
+    "benefit": "Promotes deep rest and rejuvenation.",
+    "steps": [
+      "Lie flat on your back with legs extended and arms by your sides.",
+      "Close your eyes and let your entire body relax.",
+      "Focus on your breath and stay in this pose for 5-10 minutes."
+    ]
+  },
+  "Angry": {
+    "sanskrit_name": "Simhasana",
+    "english_name": "Lion's Breath",
+    "benefit": "Releases anger and tension through expressive breath.",
+    "steps": [
+      "Sit in a comfortable kneeling position.",
+      "Inhale deeply through the nose.",
+      "Exhale forcefully through the mouth while sticking out your tongue and roaring like a lion.",
+      "Repeat for 5 rounds."
+    ]
+  },
+  "Lonely": {
+    "sanskrit_name": "Matsyasana",
+    "english_name": "Fish Pose",
+    "benefit": "Opens the heart center and promotes emotional release.",
+    "steps": [
+      "Lie on your back and slide your hands under your hips.",
+      "Press your forearms and elbows into the ground.",
+      "Lift your chest and gently drop your head back.",
+      "Hold for 5 breaths, then relax."
+    ]
+  },
+  "Joyful": {
+    "sanskrit_name": "Natarajasana",
+    "english_name": "Dancer's Pose",
+    "benefit": "Celebrates balance, grace, and self-expression.",
+    "steps": [
+      "Stand tall and shift your weight to your left foot.",
+      "Bend your right knee and hold your ankle from behind.",
+      "Extend your left arm forward and lift your right leg up.",
+      "Hold for 5-7 breaths, then switch sides."
+    ]
+  }
+}
